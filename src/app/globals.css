@@ -1,0 +1,221 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Mode clair — non utilisé, l'app est dark-first */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.75rem;
+    --font-geist-sans: 'DM Sans', sans-serif;
+    --font-geist-mono: 'DM Mono', monospace;
+    --font-cal-sans: 'DM Sans', sans-serif;
+  }
+
+  .dark {
+    --background: 10 10% 4%;
+    --foreground: 240 5% 92%;
+    --card: 240 8% 10%;
+    --card-foreground: 240 5% 92%;
+    --popover: 240 8% 10%;
+    --popover-foreground: 240 5% 92%;
+    --primary: 224 90% 66%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 6% 15%;
+    --secondary-foreground: 240 5% 92%;
+    --muted: 240 6% 15%;
+    --muted-foreground: 240 5% 55%;
+    --accent: 224 90% 66%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 6% 18%;
+    --input: 240 6% 18%;
+    --ring: 224 90% 66%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply dark;
+  }
+
+  body {
+    @apply bg-akwaba-noir font-sans text-akwaba-texte antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  /* Scrollbar personnalisée */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-akwaba-bordure;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-akwaba-muted;
+  }
+
+  /* Sélection de texte */
+  ::selection {
+    @apply bg-akwaba-bleu/30 text-akwaba-texte;
+  }
+}
+
+@layer components {
+  /* Carte principale */
+  .carte-principale {
+    @apply rounded-xl border border-akwaba-bordure bg-akwaba-carte p-6;
+  }
+
+  /* Bouton principal */
+  .btn-principal {
+    @apply flex items-center gap-2 rounded-lg bg-akwaba-bleu px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-akwaba-bleu-clair;
+  }
+
+  /* Badge de statut */
+  .badge-succes {
+    @apply rounded-full border border-akwaba-vert/20 bg-akwaba-vert/15 px-2.5 py-0.5 text-xs font-medium text-akwaba-vert;
+  }
+  .badge-erreur {
+    @apply rounded-full border border-akwaba-rouge/20 bg-akwaba-rouge/15 px-2.5 py-0.5 text-xs font-medium text-akwaba-rouge;
+  }
+  .badge-avertissement {
+    @apply rounded-full border border-akwaba-orange/20 bg-akwaba-orange/15 px-2.5 py-0.5 text-xs font-medium text-akwaba-orange;
+  }
+  .badge-info {
+    @apply rounded-full border border-akwaba-bleu/20 bg-akwaba-bleu/15 px-2.5 py-0.5 text-xs font-medium text-akwaba-bleu;
+  }
+
+  /* Input du formulaire */
+  .champ-saisie {
+    @apply w-full rounded-lg border border-akwaba-bordure bg-akwaba-surface px-3 py-2.5 text-sm text-akwaba-texte transition-all duration-200 placeholder:text-akwaba-muted focus:border-akwaba-bleu focus:outline-none focus:ring-2 focus:ring-akwaba-bleu/50;
+  }
+
+  /* Skeleton loader */
+  .skeleton {
+    @apply animate-pulse rounded-lg bg-akwaba-surface;
+    background: linear-gradient(90deg, #16161f 25%, #1c1c27 50%, #16161f 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  /* Ligne de tableau */
+  .ligne-tableau {
+    @apply border-b border-akwaba-bordure transition-colors duration-150 hover:bg-akwaba-surface/50;
+  }
+
+  /* Navigation item */
+  .nav-item {
+    @apply flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-akwaba-muted transition-all duration-200 hover:bg-akwaba-surface hover:text-akwaba-texte;
+  }
+  .nav-item.actif {
+    @apply border border-akwaba-bleu/20 bg-akwaba-bleu/10 text-akwaba-bleu;
+  }
+
+  /* Overlay de modale */
+  .overlay-modale {
+    @apply fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm;
+  }
+}
+
+/* Animations globales */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes entree-haut {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes entree-bas {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.anime-entree {
+  animation: entree-bas 0.4s ease-out forwards;
+}
+
+/* Grille responsive du dashboard */
+.grille-dashboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+/* Focus visible personnalisé */
+*:focus-visible {
+  outline: 2px solid #4f7fff;
+  outline-offset: 2px;
+}
+
+/* Utilitaire screen reader */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Respect du paramètre "réduire les animations" */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

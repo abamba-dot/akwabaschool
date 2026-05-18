@@ -1,0 +1,15 @@
+{
+  "extends": ["next/core-web-vitals", "plugin:import/recommended"],
+  "rules": {
+    "react/no-unescaped-entities": "off",
+    "no-console": ["warn", { "allow": ["error", "warn"] }],
+    "import/order": [
+      "warn",
+      {
+        "groups": ["builtin", "external", "internal", "parent", "sibling", "index"],
+        "newlines-between": "always",
+        "alphabetize": { "order": "asc", "caseInsensitive": true }
+      }
+    ]
+  }
+}
