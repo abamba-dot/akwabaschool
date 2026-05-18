@@ -59,3 +59,5 @@ skills-lock.json
 
 # Build info
 tsconfig.tsbuildinfo
+src/__tests__/
+.env.example
