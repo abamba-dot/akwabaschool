@@ -209,6 +209,26 @@ CREATE INDEX idx_absences_eleve ON absences(eleve_id);
 CREATE INDEX idx_absences_date ON absences(date DESC);
 CREATE INDEX idx_absences_statut ON absences(statut);
 
+-- ─── Fonctions privées pour les politiques RLS ───────────────
+
+CREATE SCHEMA IF NOT EXISTS prive;
+
+CREATE OR REPLACE FUNCTION prive.role_utilisateur_courant()
+RETURNS public.role_utilisateur
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+  SELECT role
+  FROM public.utilisateurs
+  WHERE id = (SELECT auth.uid())
+  LIMIT 1;
+$$;
+
+REVOKE ALL ON FUNCTION prive.role_utilisateur_courant() FROM public;
+GRANT USAGE ON SCHEMA prive TO authenticated;
+GRANT EXECUTE ON FUNCTION prive.role_utilisateur_courant() TO authenticated;
+
 -- ─── Trigger : mis_a_jour_le ──────────────────────────────────
 
 CREATE OR REPLACE FUNCTION mettre_a_jour_timestamp()
@@ -273,50 +293,50 @@ ALTER TABLE absences ENABLE ROW LEVEL SECURITY;
 -- Politique : lecture restreinte selon le rôle
 -- NOTE V2 : affiner par classe/enseignant pour les données sensibles.
 CREATE POLICY "lecture_utilisateurs_staff" ON utilisateurs FOR SELECT TO authenticated
-  USING (EXISTS (SELECT 1 FROM utilisateurs u WHERE u.id = auth.uid() AND u.role IN ('admin', 'directeur')));
+  USING (id = (SELECT auth.uid()) OR (SELECT prive.role_utilisateur_courant()) IN ('admin', 'directeur'));
 CREATE POLICY "lecture_annees_authentifie" ON annees_scolaires FOR SELECT TO authenticated USING (true);
 CREATE POLICY "lecture_eleves_authentifie" ON eleves FOR SELECT TO authenticated USING (true);
 CREATE POLICY "lecture_enseignants_authentifie" ON enseignants FOR SELECT TO authenticated USING (true);
 CREATE POLICY "lecture_classes_authentifie" ON classes FOR SELECT TO authenticated USING (true);
 CREATE POLICY "lecture_enseignant_classes_authentifie" ON enseignant_classes FOR SELECT TO authenticated USING (true);
 CREATE POLICY "lecture_paiements_staff" ON paiements FOR SELECT TO authenticated
-  USING (EXISTS (SELECT 1 FROM utilisateurs u WHERE u.id = auth.uid() AND u.role IN ('admin', 'directeur', 'secretaire')));
+  USING ((SELECT prive.role_utilisateur_courant()) IN ('admin', 'directeur', 'secretaire'));
 CREATE POLICY "lecture_notes_authentifie" ON notes FOR SELECT TO authenticated USING (true);
 CREATE POLICY "lecture_absences_authentifie" ON absences FOR SELECT TO authenticated USING (true);
 
 -- Politique : écriture restreinte selon le rôle
 CREATE POLICY "ecriture_annees_admin" ON annees_scolaires FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM utilisateurs u WHERE u.id = auth.uid() AND u.role IN ('admin', 'directeur')))
-  WITH CHECK (EXISTS (SELECT 1 FROM utilisateurs u WHERE u.id = auth.uid() AND u.role IN ('admin', 'directeur')));
+  USING ((SELECT prive.role_utilisateur_courant()) IN ('admin', 'directeur'))
+  WITH CHECK ((SELECT prive.role_utilisateur_courant()) IN ('admin', 'directeur'));
 
 CREATE POLICY "ecriture_eleves_staff" ON eleves FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM utilisateurs u WHERE u.id = auth.uid() AND u.role IN ('admin', 'secretaire')))
-  WITH CHECK (EXISTS (SELECT 1 FROM utilisateurs u WHERE u.id = auth.uid() AND u.role IN ('admin', 'secretaire')));
+  USING ((SELECT prive.role_utilisateur_courant()) IN ('admin', 'secretaire'))
+  WITH CHECK ((SELECT prive.role_utilisateur_courant()) IN ('admin', 'secretaire'));
 
 CREATE POLICY "ecriture_paiements_staff" ON paiements FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM utilisateurs u WHERE u.id = auth.uid() AND u.role IN ('admin', 'secretaire')))
-  WITH CHECK (EXISTS (SELECT 1 FROM utilisateurs u WHERE u.id = auth.uid() AND u.role IN ('admin', 'secretaire')));
+  USING ((SELECT prive.role_utilisateur_courant()) IN ('admin', 'secretaire'))
+  WITH CHECK ((SELECT prive.role_utilisateur_courant()) IN ('admin', 'secretaire'));
 
 CREATE POLICY "ecriture_classes_staff" ON classes FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM utilisateurs u WHERE u.id = auth.uid() AND u.role IN ('admin', 'directeur', 'secretaire')))
-  WITH CHECK (EXISTS (SELECT 1 FROM utilisateurs u WHERE u.id = auth.uid() AND u.role IN ('admin', 'directeur', 'secretaire')));
+  USING ((SELECT prive.role_utilisateur_courant()) IN ('admin', 'directeur', 'secretaire'))
+  WITH CHECK ((SELECT prive.role_utilisateur_courant()) IN ('admin', 'directeur', 'secretaire'));
 
 CREATE POLICY "ecriture_enseignants_staff" ON enseignants FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM utilisateurs u WHERE u.id = auth.uid() AND u.role IN ('admin', 'directeur', 'secretaire')))
-  WITH CHECK (EXISTS (SELECT 1 FROM utilisateurs u WHERE u.id = auth.uid() AND u.role IN ('admin', 'directeur', 'secretaire')));
+  USING ((SELECT prive.role_utilisateur_courant()) IN ('admin', 'directeur', 'secretaire'))
+  WITH CHECK ((SELECT prive.role_utilisateur_courant()) IN ('admin', 'directeur', 'secretaire'));
 
 CREATE POLICY "ecriture_absences_staff" ON absences FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM utilisateurs u WHERE u.id = auth.uid() AND u.role IN ('admin', 'directeur', 'secretaire', 'enseignant')))
-  WITH CHECK (EXISTS (SELECT 1 FROM utilisateurs u WHERE u.id = auth.uid() AND u.role IN ('admin', 'directeur', 'secretaire', 'enseignant')));
+  USING ((SELECT prive.role_utilisateur_courant()) IN ('admin', 'directeur', 'secretaire', 'enseignant'))
+  WITH CHECK ((SELECT prive.role_utilisateur_courant()) IN ('admin', 'directeur', 'secretaire', 'enseignant'));
 
 CREATE POLICY "ecriture_notes_staff" ON notes FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM utilisateurs u WHERE u.id = auth.uid() AND u.role IN ('admin', 'directeur', 'secretaire', 'enseignant')))
-  WITH CHECK (EXISTS (SELECT 1 FROM utilisateurs u WHERE u.id = auth.uid() AND u.role IN ('admin', 'directeur', 'secretaire', 'enseignant')));
+  USING ((SELECT prive.role_utilisateur_courant()) IN ('admin', 'directeur', 'secretaire', 'enseignant'))
+  WITH CHECK ((SELECT prive.role_utilisateur_courant()) IN ('admin', 'directeur', 'secretaire', 'enseignant'));
 
 -- Politique manquante V1 : enseignant_classes
 CREATE POLICY "ecriture_enseignant_classes_staff" ON enseignant_classes FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM utilisateurs u WHERE u.id = auth.uid() AND u.role IN ('admin', 'directeur', 'secretaire')))
-  WITH CHECK (EXISTS (SELECT 1 FROM utilisateurs u WHERE u.id = auth.uid() AND u.role IN ('admin', 'directeur', 'secretaire')));
+  USING ((SELECT prive.role_utilisateur_courant()) IN ('admin', 'directeur', 'secretaire'))
+  WITH CHECK ((SELECT prive.role_utilisateur_courant()) IN ('admin', 'directeur', 'secretaire'));
 
 -- ─── Vues utiles ─────────────────────────────────────────────
 

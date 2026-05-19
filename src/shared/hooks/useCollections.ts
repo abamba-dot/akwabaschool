@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useState } from 'react'
 
-import { absenceService, classeService, dashboardService, enseignantService, noteService } from '@/shared/services'
-import { messageErreur } from '@/shared/lib/erreurs'
 import { paiementService } from '@/features/paiements/services/paiementService'
+import { messageErreur } from '@/shared/lib/erreurs'
+import { absenceService, classeService, dashboardService, enseignantService, noteService } from '@/shared/services'
 import type {
   Absence,
   Classe,

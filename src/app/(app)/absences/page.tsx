@@ -8,9 +8,9 @@ import { CalendarX, Plus, Search, CheckCircle, XCircle, Clock, AlertCircle } fro
 import { useState, useMemo } from 'react'
 import toast from 'react-hot-toast'
 
+import { useEleves } from '@/features/eleves/hooks/useEleves'
 import { Topbar } from '@/shared/components/layout/Topbar'
 import { useAbsences } from '@/shared/hooks/useCollections'
-import { useEleves } from '@/features/eleves/hooks/useEleves'
 import { formaterDate, cn } from '@/shared/lib/utils'
 import type { FormulaireAbsence, StatutAbsence, TypeAbsence } from '@/shared/types'
 

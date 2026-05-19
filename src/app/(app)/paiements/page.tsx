@@ -5,15 +5,20 @@
 // ============================================================
 
 import { Plus, Search, CreditCard, Download, X, MoreHorizontal } from 'lucide-react'
+import dynamic from 'next/dynamic'
 import { useState, useMemo } from 'react'
 import toast from 'react-hot-toast'
 
-import { Topbar } from '@/shared/components/layout/Topbar'
-import { ModalePaiement } from '@/features/paiements/components/ModalePaiement'
-import { usePaiements } from '@/shared/hooks/useCollections'
 import { useEleves } from '@/features/eleves/hooks/useEleves'
+import { Topbar } from '@/shared/components/layout/Topbar'
+import { usePaiements } from '@/shared/hooks/useCollections'
 import { formaterMontant, formaterDate, cn } from '@/shared/lib/utils'
 import type { Paiement, StatutPaiement } from '@/shared/types'
+
+const ModalePaiement = dynamic(
+  () => import('@/features/paiements/components/ModalePaiement').then((module) => module.ModalePaiement),
+  { ssr: false },
+)
 
 const STATUT_LABELS: Record<string, string> = {
   paye: 'Payé',

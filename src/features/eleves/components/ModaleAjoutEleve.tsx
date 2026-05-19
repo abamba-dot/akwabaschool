@@ -9,8 +9,8 @@ import { Loader2, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 
 import { CLASSES_MOCK } from '@/shared/lib/donnees-mock'
-import { schemaEleve } from '@/shared/validation/common'
 import type { Classe, FormulaireEleve } from '@/shared/types'
+import { schemaEleve } from '@/shared/validation/common'
 
 interface Props {
   ouvert: boolean

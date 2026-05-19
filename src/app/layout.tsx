@@ -24,7 +24,7 @@ export default function LayoutRacine({ children }: { children: React.ReactNode }
   return (
     <html lang="fr" className="dark">
       <head>
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body className="bg-akwaba-noir text-akwaba-texte antialiased">

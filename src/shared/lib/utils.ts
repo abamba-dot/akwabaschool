@@ -86,9 +86,18 @@ export function tronquer(texte: string, longueur: number): string {
 }
 
 // Générer un matricule unique
-export function genererMatricule(annee: number, sequence: number): string {
-  const seq = String(sequence).padStart(3, '0')
-  return `AKW-${annee}-${seq}`
+export function genererMatricule(classe: string, prenom: string, nom: string, suffixe = ''): string {
+  const codeClasse = classe.replace(/\s+/g, '').toUpperCase() || 'GEN'
+  const nettoyer = (valeur: string, longueur: number) =>
+    valeur
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z]/g, '')
+      .toUpperCase()
+      .slice(0, longueur)
+  const codeEleve = `${nettoyer(prenom, 1)}${nettoyer(nom, 2)}` || 'ELV'
+
+  return `AKW-${codeClasse}-${codeEleve}${suffixe}`.slice(0, 20)
 }
 
 // Générer une référence de paiement

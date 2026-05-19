@@ -9,8 +9,8 @@ import { Loader2, CreditCard } from 'lucide-react'
 import { useState } from 'react'
 
 import { ELEVES_MOCK } from '@/shared/lib/donnees-mock'
-import { schemaPaiement } from '@/shared/validation/common'
 import type { Eleve, FormulairePaiement, MethodePaiement, TypePaiement } from '@/shared/types'
+import { schemaPaiement } from '@/shared/validation/common'
 
 interface Props {
   ouvert: boolean

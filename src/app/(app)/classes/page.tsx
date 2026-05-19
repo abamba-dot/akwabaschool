@@ -4,13 +4,22 @@
 // PAGE CLASSES — Gestion des classes et affectations
 // ============================================================
 
-import { BookOpen, Plus, Users, UserCog, MapPin, Pencil, Trash2 } from 'lucide-react'
+import { BookOpen, MapPin, Pencil, Plus, Trash2, UserCog, Users } from 'lucide-react'
+import dynamic from 'next/dynamic'
+import { useState } from 'react'
 import toast from 'react-hot-toast'
 
-import { Topbar } from '@/shared/components/layout/Topbar'
-import { useClasses, useEnseignants } from '@/shared/hooks/useCollections'
 import { useEleves } from '@/features/eleves/hooks/useEleves'
+import { Topbar } from '@/shared/components/layout/Topbar'
+import { ModaleSuppression } from '@/shared/components/ui/ModaleSuppression'
+import { useClasses, useEnseignants } from '@/shared/hooks/useCollections'
 import { cn } from '@/shared/lib/utils'
+import type { Classe } from '@/shared/types'
+
+const ModaleAjoutClasse = dynamic(
+  () => import('@/features/classes/components/ModaleAjoutClasse').then((m) => m.ModaleAjoutClasse),
+  { ssr: false },
+)
 
 const COULEURS_NIVEAU: Record<string, string> = {
   '6ème': 'bg-akwaba-bleu/10 text-akwaba-bleu border-akwaba-bleu/20',
@@ -27,6 +36,11 @@ export default function PageClasses() {
   const { enseignants } = useEnseignants()
   const { eleves } = useEleves()
 
+  const [modaleAjout, setModaleAjout] = useState(false)
+  const [classeAEditer, setClasseAEditer] = useState<Classe | null>(null)
+  const [classeASupprimer, setClasseASupprimer] = useState<Classe | null>(null)
+  const [chargementSuppression, setChargementSuppression] = useState(false)
+
   function nomEnseignant(id?: string) {
     if (!id) return 'Non affecté'
     const ens = enseignants.find((e) => e.id === id)
@@ -37,22 +51,23 @@ export default function PageClasses() {
     return eleves.filter((e) => e.classeId === classeId && e.statut === 'actif').length
   }
 
-  async function creerClasse() {
-    const nom = window.prompt('Nom de la classe')
-    if (!nom) return
-    const niveau = window.prompt('Niveau', nom.split(' ')[0] || '6ème') || '6ème'
-    const salle = window.prompt('Salle', '101') || '101'
-    try {
-      await creer({ nom, niveau, salle, capaciteMax: 40, anneeScolaireId: 'as-2024-2025' })
-      toast.success('Classe créée.')
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Création impossible.')
-    }
-  }
-
   function tauxOccupation(classeId: string, capacite: number) {
     const effectif = effectifClasse(classeId)
     return Math.round((effectif / capacite) * 100)
+  }
+
+  async function confirmerSuppression() {
+    if (!classeASupprimer) return
+    setChargementSuppression(true)
+    try {
+      await supprimer(classeASupprimer.id)
+      toast.success(`Classe ${classeASupprimer.nom} supprimée.`)
+      setClasseASupprimer(null)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Suppression impossible.')
+    } finally {
+      setChargementSuppression(false)
+    }
   }
 
   // Regrouper par niveau
@@ -64,7 +79,7 @@ export default function PageClasses() {
         titre="Classes"
         sousTitre={`${classes.length} classes · ${classes.reduce((a, c) => a + (c.effectif || 0), 0)} élèves`}
         actions={
-          <button onClick={creerClasse} className="btn-principal text-xs">
+          <button onClick={() => setModaleAjout(true)} className="btn-principal text-xs">
             <Plus className="h-3.5 w-3.5" />
             Nouvelle classe
           </button>
@@ -83,7 +98,9 @@ export default function PageClasses() {
             },
             {
               label: 'Taux moyen remplissage',
-              valeur: `${Math.round(classes.reduce((acc, c) => acc + tauxOccupation(c.id, c.capaciteMax), 0) / classes.length)}%`,
+              valeur: classes.length
+                ? `${Math.round(classes.reduce((acc, c) => acc + tauxOccupation(c.id, c.capaciteMax), 0) / classes.length)}%`
+                : '0%',
               couleur: 'text-akwaba-orange',
             },
             { label: 'Niveaux', valeur: niveaux.length, couleur: 'text-akwaba-violet' },
@@ -132,23 +149,16 @@ export default function PageClasses() {
                         </div>
                         <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                           <button
-                            onClick={async () => {
-                              const nom = window.prompt('Nouveau nom', classe.nom)
-                              if (!nom) return
-                              await modifier(classe.id, { nom })
-                              toast.success('Classe modifiée.')
-                            }}
+                            onClick={() => setClasseAEditer(classe)}
                             className="flex h-7 w-7 items-center justify-center rounded-lg text-akwaba-muted transition-all hover:bg-akwaba-surface hover:text-akwaba-texte"
+                            aria-label="Modifier"
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
                           <button
-                            onClick={async () => {
-                              if (!window.confirm(`Supprimer ${classe.nom} ?`)) return
-                              await supprimer(classe.id)
-                              toast.success('Classe supprimée.')
-                            }}
+                            onClick={() => setClasseASupprimer(classe)}
                             className="flex h-7 w-7 items-center justify-center rounded-lg text-akwaba-muted transition-all hover:bg-akwaba-rouge/10 hover:text-akwaba-rouge"
+                            aria-label="Supprimer"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
@@ -204,6 +214,55 @@ export default function PageClasses() {
           )
         })}
       </div>
+
+      {/* Modale ajout */}
+      {modaleAjout && (
+        <ModaleAjoutClasse
+          ouvert={modaleAjout}
+          onFermer={() => setModaleAjout(false)}
+          enseignants={enseignants}
+          onSoumettre={async (donnees) => {
+            try {
+              await creer(donnees)
+              setModaleAjout(false)
+              toast.success('Classe créée avec succès !')
+            } catch (error) {
+              toast.error(error instanceof Error ? error.message : 'Création impossible.')
+            }
+          }}
+        />
+      )}
+
+      {/* Modale édition */}
+      {classeAEditer && (
+        <ModaleAjoutClasse
+          ouvert={Boolean(classeAEditer)}
+          onFermer={() => setClasseAEditer(null)}
+          enseignants={enseignants}
+          classeInitiale={classeAEditer}
+          onSoumettre={async (donnees) => {
+            try {
+              await modifier(classeAEditer.id, donnees)
+              setClasseAEditer(null)
+              toast.success('Classe modifiée.')
+            } catch (error) {
+              toast.error(error instanceof Error ? error.message : 'Modification impossible.')
+            }
+          }}
+        />
+      )}
+
+      {/* Modale suppression */}
+      {classeASupprimer && (
+        <ModaleSuppression
+          ouvert={Boolean(classeASupprimer)}
+          message={`Supprimer la classe ${classeASupprimer.nom} ?`}
+          detail="Les élèves rattachés à cette classe ne seront pas supprimés mais n'auront plus de classe affectée."
+          chargement={chargementSuppression}
+          onConfirmer={confirmerSuppression}
+          onAnnuler={() => setClasseASupprimer(null)}
+        />
+      )}
     </div>
   )
 }

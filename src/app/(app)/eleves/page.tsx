@@ -17,17 +17,26 @@ import {
   X,
   UserPlus,
 } from 'lucide-react'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useState, useMemo } from 'react'
 import toast from 'react-hot-toast'
 
-import { ModaleAjoutEleve } from '@/features/eleves/components/ModaleAjoutEleve'
-import { Topbar } from '@/shared/components/layout/Topbar'
-import { ModaleSuppression } from '@/shared/components/ui/ModaleSuppression'
-import { useClasses } from '@/shared/hooks/useCollections'
 import { useEleves } from '@/features/eleves/hooks/useEleves'
+import { Topbar } from '@/shared/components/layout/Topbar'
+import { useClasses } from '@/shared/hooks/useCollections'
 import { calculerAge, obtenirInitiales, couleurAvatar, rechercherDans, paginer, cn } from '@/shared/lib/utils'
 import type { Eleve, StatutEleveType, StatutPaiementType } from '@/shared/types'
+
+const ModaleAjoutEleve = dynamic(
+  () => import('@/features/eleves/components/ModaleAjoutEleve').then((module) => module.ModaleAjoutEleve),
+  { ssr: false },
+)
+
+const ModaleSuppression = dynamic(
+  () => import('@/shared/components/ui/ModaleSuppression').then((module) => module.ModaleSuppression),
+  { ssr: false },
+)
 
 // Nombre d'élèves par page
 const parPage = 10

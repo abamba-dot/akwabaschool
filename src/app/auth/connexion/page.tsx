@@ -2,30 +2,58 @@
 
 import { Eye, EyeOff, GraduationCap, ArrowRight, Loader2 } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { Suspense, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 
-import { useAuth } from '@/features/auth/hooks/useAuth'
+import { supabase, supabaseEstConfigure } from '@/infrastructure/supabase/client'
 
 export default function PageConnexion() {
-  const router = useRouter()
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-akwaba-noir" />}>
+      <FormulaireConnexion />
+    </Suspense>
+  )
+}
+
+function FormulaireConnexion() {
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [motDePasse, setMotDePasse] = useState('')
   const [montrerMDP, setMontrerMDP] = useState(false)
   const [chargement, setChargement] = useState(false)
+  const [formulairePret, setFormulairePret] = useState(false)
   const [erreur, setErreur] = useState('')
-  const { seConnecter } = useAuth()
+
+  useEffect(() => {
+    setFormulairePret(true)
+  }, [])
 
   async function gererConnexion(e: React.FormEvent) {
     e.preventDefault()
+    const formulaire = new FormData(e.currentTarget as HTMLFormElement)
+    const emailSaisi = String(formulaire.get('email') ?? email).trim()
+    const motDePasseSaisi = String(formulaire.get('motDePasse') ?? motDePasse)
+
     setErreur('')
     setChargement(true)
 
     try {
-      await seConnecter(email, motDePasse)
+      if (!supabaseEstConfigure()) {
+        if (demoActive && emailSaisi === 'admin@akwaba.edu' && motDePasseSaisi === 'admin123') {
+          document.cookie = 'akwaba-demo-session=connecte; path=/; max-age=86400; SameSite=Strict'
+        } else {
+          throw new Error('Email ou mot de passe incorrect.')
+        }
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email: emailSaisi, password: motDePasseSaisi })
+        if (error) throw error
+      }
+
       toast.success('Connexion réussie ! Bienvenue.')
-      router.push('/dashboard')
+      const retour = searchParams.get('redirect')
+      const destination = retour?.startsWith('/') && !retour.startsWith('/auth') ? retour : '/dashboard'
+      window.location.assign(destination)
     } catch (error) {
       setErreur(error instanceof Error ? error.message : 'Email ou mot de passe incorrect. Vérifiez vos informations.')
       toast.error('Identifiants incorrects.')
@@ -75,7 +103,7 @@ export default function PageConnexion() {
             <p className="mt-1 text-sm text-akwaba-muted">Entrez vos identifiants pour accéder à votre espace</p>
           </div>
 
-          <form onSubmit={gererConnexion} className="space-y-4">
+          <form onSubmit={gererConnexion} method="post" className="space-y-4">
             {/* Email */}
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-akwaba-texte" htmlFor="email">
@@ -83,6 +111,7 @@ export default function PageConnexion() {
               </label>
               <input
                 id="email"
+                name="email"
                 type="email"
                 className="champ-saisie"
                 placeholder="vous@akwaba.edu"
@@ -110,6 +139,7 @@ export default function PageConnexion() {
               <div className="relative">
                 <input
                   id="mot-de-passe"
+                  name="motDePasse"
                   type={montrerMDP ? 'text' : 'password'}
                   className="champ-saisie pr-10"
                   placeholder="••••••••"
@@ -146,7 +176,7 @@ export default function PageConnexion() {
             {/* Bouton connexion */}
             <button
               type="submit"
-              disabled={chargement}
+              disabled={chargement || !formulairePret}
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-akwaba-bleu px-4 py-2.5 font-medium text-white transition-all duration-200 hover:bg-akwaba-bleu-clair disabled:cursor-not-allowed disabled:opacity-60"
             >
               {chargement ? (

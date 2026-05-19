@@ -4,15 +4,21 @@
 // PAGE ENSEIGNANTS — Gestion du corps enseignant
 // ============================================================
 
-import { UserCog, Plus, Search, X, Mail, Phone, MoreHorizontal, Trash2, Pencil } from 'lucide-react'
-import { useState, useMemo } from 'react'
+import { Mail, MoreHorizontal, Pencil, Phone, Plus, Search, Trash2, UserCog, X } from 'lucide-react'
+import dynamic from 'next/dynamic'
+import { useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 
 import { Topbar } from '@/shared/components/layout/Topbar'
 import { ModaleSuppression } from '@/shared/components/ui/ModaleSuppression'
 import { useEnseignants } from '@/shared/hooks/useCollections'
-import { obtenirInitiales, couleurAvatar, rechercherDans, cn } from '@/shared/lib/utils'
+import { cn, couleurAvatar, obtenirInitiales, rechercherDans } from '@/shared/lib/utils'
 import type { Enseignant } from '@/shared/types'
+
+const ModaleAjoutEnseignant = dynamic(
+  () => import('@/features/enseignants/components/ModaleAjoutEnseignant').then((m) => m.ModaleAjoutEnseignant),
+  { ssr: false },
+)
 
 const STATUT_STYLE: Record<string, string> = {
   actif: 'badge-succes',
@@ -31,6 +37,8 @@ export default function PageEnseignants() {
   const [filtreStatut, setFiltreStatut] = useState('')
   const [menuOuvert, setMenuOuvert] = useState<string | null>(null)
   const [enseignantASupprimer, setEnseignantASupprimer] = useState<Enseignant | null>(null)
+  const [enseignantAEditer, setEnseignantAEditer] = useState<Enseignant | null>(null)
+  const [modaleAjout, setModaleAjout] = useState(false)
   const [chargement, setChargement] = useState(false)
   const [vue, setVue] = useState<'grille' | 'tableau'>('grille')
 
@@ -54,35 +62,13 @@ export default function PageEnseignants() {
     }
   }
 
-  async function ajouterEnseignant() {
-    const nomComplet = window.prompt("Nom et prénom de l'enseignant")
-    if (!nomComplet) return
-    const [prenom = '', ...reste] = nomComplet.trim().split(' ')
-    const nom = reste.join(' ') || prenom
-    const specialite = window.prompt('Spécialité', 'Mathématiques') || 'Mathématiques'
-    try {
-      await creer({
-        prenom,
-        nom,
-        email: `${prenom.toLowerCase()}.${nom.toLowerCase().replace(/\s+/g, '')}@akwaba.edu`,
-        telephone: '',
-        specialite,
-        dateEmbauche: new Date().toISOString().split('T')[0],
-        statut: 'actif',
-      })
-      toast.success('Enseignant ajouté.')
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Création impossible.')
-    }
-  }
-
   return (
     <div className="flex flex-col">
       <Topbar
         titre="Enseignants"
         sousTitre={`${enseignantsFiltres.length} enseignant${enseignantsFiltres.length > 1 ? 's' : ''}`}
         actions={
-          <button onClick={ajouterEnseignant} className="btn-principal text-xs">
+          <button onClick={() => setModaleAjout(true)} className="btn-principal text-xs">
             <Plus className="h-3.5 w-3.5" />
             Ajouter
           </button>
@@ -100,6 +86,7 @@ export default function PageEnseignants() {
               value={recherche}
               onChange={(e) => setRecherche(e.target.value)}
               className="champ-saisie pl-9"
+              aria-label="Rechercher un enseignant"
             />
           </div>
           <div className="flex gap-2">
@@ -107,12 +94,23 @@ export default function PageEnseignants() {
               value={filtreStatut}
               onChange={(e) => setFiltreStatut(e.target.value)}
               className="champ-saisie w-auto text-xs"
+              aria-label="Filtrer par statut"
             >
               <option value="">Tous statuts</option>
               <option value="actif">Actif</option>
               <option value="inactif">Inactif</option>
               <option value="conge">En congé</option>
             </select>
+
+            {filtreStatut && (
+              <button
+                onClick={() => setFiltreStatut('')}
+                className="flex items-center gap-1.5 rounded-lg border border-akwaba-bordure px-3 py-2 text-xs text-akwaba-muted transition-all hover:border-akwaba-muted hover:text-akwaba-texte"
+                aria-label="Effacer filtre"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
 
             {/* Bascule vue */}
             <div className="flex overflow-hidden rounded-lg border border-akwaba-bordure">
@@ -151,6 +149,7 @@ export default function PageEnseignants() {
                     <button
                       onClick={() => setMenuOuvert(menuOuvert === ens.id ? null : ens.id)}
                       className="flex h-7 w-7 items-center justify-center rounded-lg text-akwaba-muted opacity-0 transition-all hover:bg-akwaba-surface hover:text-akwaba-texte group-hover:opacity-100"
+                      aria-label="Actions"
                     >
                       <MoreHorizontal className="h-4 w-4" />
                     </button>
@@ -160,12 +159,9 @@ export default function PageEnseignants() {
                         <div className="absolute right-0 top-8 z-20 w-36 animate-fade-in overflow-hidden rounded-xl border border-akwaba-bordure bg-akwaba-carte shadow-2xl">
                           <button
                             className="flex w-full items-center gap-2 px-3 py-2.5 text-xs text-akwaba-muted transition-colors hover:bg-akwaba-surface hover:text-akwaba-texte"
-                            onClick={async () => {
-                              const specialite = window.prompt('Spécialité', ens.specialite)
-                              if (!specialite) return
-                              await modifier(ens.id, { specialite })
+                            onClick={() => {
                               setMenuOuvert(null)
-                              toast.success('Enseignant modifié.')
+                              setEnseignantAEditer(ens)
                             }}
                           >
                             <Pencil className="h-3.5 w-3.5" /> Modifier
@@ -224,7 +220,7 @@ export default function PageEnseignants() {
                       className="flex items-center gap-2 text-xs text-akwaba-muted transition-colors hover:text-akwaba-texte"
                     >
                       <Phone className="h-3 w-3 flex-shrink-0" />
-                      <span className="truncate">{ens.telephone}</span>
+                      <span className="truncate">{ens.telephone || '—'}</span>
                     </a>
                     <a
                       href={`mailto:${ens.email}`}
@@ -244,7 +240,7 @@ export default function PageEnseignants() {
             <table className="w-full text-sm" aria-label="Liste des enseignants">
               <thead>
                 <tr className="border-b border-akwaba-bordure">
-                  {['Enseignant', 'Spécialité', 'Téléphone', 'Email', 'Statut'].map((h) => (
+                  {['Enseignant', 'Spécialité', 'Téléphone', 'Email', 'Statut', ''].map((h) => (
                     <th
                       key={h}
                       className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-akwaba-muted"
@@ -273,10 +269,19 @@ export default function PageEnseignants() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-xs text-akwaba-muted">{ens.specialite}</td>
-                    <td className="px-4 py-3 text-xs text-akwaba-muted">{ens.telephone}</td>
+                    <td className="px-4 py-3 text-xs text-akwaba-muted">{ens.telephone || '—'}</td>
                     <td className="px-4 py-3 text-xs text-akwaba-muted">{ens.email}</td>
                     <td className="px-4 py-3">
                       <span className={STATUT_STYLE[ens.statut]}>{STATUT_LABEL[ens.statut]}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => setEnseignantAEditer(ens)}
+                        className="flex h-7 w-7 items-center justify-center rounded-lg text-akwaba-muted transition-all hover:bg-akwaba-surface hover:text-akwaba-texte"
+                        aria-label="Modifier"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -286,6 +291,42 @@ export default function PageEnseignants() {
         )}
       </div>
 
+      {/* Modale ajout */}
+      {modaleAjout && (
+        <ModaleAjoutEnseignant
+          ouvert={modaleAjout}
+          onFermer={() => setModaleAjout(false)}
+          onSoumettre={async (donnees) => {
+            try {
+              await creer(donnees)
+              setModaleAjout(false)
+              toast.success('Enseignant ajouté avec succès !')
+            } catch (error) {
+              toast.error(error instanceof Error ? error.message : 'Création impossible.')
+            }
+          }}
+        />
+      )}
+
+      {/* Modale édition */}
+      {enseignantAEditer && (
+        <ModaleAjoutEnseignant
+          ouvert={Boolean(enseignantAEditer)}
+          onFermer={() => setEnseignantAEditer(null)}
+          enseignantInitial={enseignantAEditer}
+          onSoumettre={async (donnees) => {
+            try {
+              await modifier(enseignantAEditer.id, donnees)
+              setEnseignantAEditer(null)
+              toast.success('Enseignant modifié.')
+            } catch (error) {
+              toast.error(error instanceof Error ? error.message : 'Modification impossible.')
+            }
+          }}
+        />
+      )}
+
+      {/* Modale suppression */}
       {enseignantASupprimer && (
         <ModaleSuppression
           ouvert={Boolean(enseignantASupprimer)}

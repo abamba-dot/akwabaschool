@@ -20,12 +20,10 @@ export async function middleware(request: NextRequest) {
   const chemin = request.nextUrl.pathname
   const estProtegee = routesProtegees.some((route) => chemin.startsWith(route))
 
-  // Routes publiques (auth, API publique, assets)
   if (!estProtegee) {
     return NextResponse.next()
   }
 
-  // Si aucun système d'auth n'est configuré et démo désactivée → bloquer
   if (!supabaseUrl && !cleSupabase && !demoActive) {
     const url = request.nextUrl.clone()
     url.pathname = '/auth/connexion'
@@ -33,7 +31,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Mode démo local : vérifier le cookie de session
   if (!supabaseUrl || !cleSupabase) {
     const demoSession = request.cookies.get('akwaba-demo-session')?.value
     if (demoActive && demoSession === 'connecte') {
@@ -45,7 +42,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Mode Supabase standard — vérification serveur du JWT
   const { supabase, reponseSupabase } = createClient(request)
   if (!supabase) return reponseSupabase
 

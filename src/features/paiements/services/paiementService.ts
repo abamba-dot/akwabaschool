@@ -1,8 +1,8 @@
-import { PAIEMENTS_MOCK } from '@/shared/lib/donnees-mock'
+import { creerIdentifiant, ecrireCollectionLocale, lireCollectionLocale } from '@/infrastructure/storage/stockageLocal'
 import { supabase, supabaseEstConfigure } from '@/infrastructure/supabase/client'
+import { PAIEMENTS_MOCK } from '@/shared/lib/donnees-mock'
 import { leverErreurService } from '@/shared/lib/erreurs'
 import { colonnesPaiement, mapperPaiement } from '@/shared/lib/mappers'
-import { creerIdentifiant, ecrireCollectionLocale, lireCollectionLocale } from '@/infrastructure/storage/stockageLocal'
 import type { FormulairePaiement, Paiement, StatutPaiement } from '@/shared/types'
 
 const CLE_PAIEMENTS = 'akwaba.paiements'

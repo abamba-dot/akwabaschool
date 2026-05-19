@@ -56,6 +56,11 @@ dev-server*.log
 # Agent skills / local environment
 .agents/
 skills-lock.json
+.mcp.json
+
+# Test scripts (local dev only)
+test_*.py
+*.test.py
 
 # Build info
 tsconfig.tsbuildinfo

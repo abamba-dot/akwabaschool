@@ -21,6 +21,25 @@ function sauvegarderElevesLocaux(eleves: Eleve[]) {
   ecrireCollectionLocale(CLE_ELEVES, eleves)
 }
 
+function segmentMatricule(valeur: string, longueur: number) {
+  return valeur
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z]/g, '')
+    .toUpperCase()
+    .slice(0, longueur)
+}
+
+function creerMatriculeLocal(donnees: FormulaireEleve, eleves: Eleve[]) {
+  const classe = CLASSES_MOCK.find((item) => item.id === donnees.classeId)
+  const codeClasse = (classe?.nom ?? 'GEN').replace(/\s+/g, '').toUpperCase()
+  const codeEleve = `${segmentMatricule(donnees.prenom, 1)}${segmentMatricule(donnees.nom, 2)}` || 'ELV'
+  const base = `AKW-${codeClasse}-${codeEleve}`.slice(0, 18)
+  const doublons = eleves.filter((eleve) => eleve.matricule.startsWith(base)).length
+
+  return doublons === 0 ? base : `${base}${doublons + 1}`
+}
+
 function appliquerFiltres(eleves: Eleve[], filtres: FiltresEleve) {
   return eleves.filter((eleve) => {
     const terme = filtres.recherche?.toLowerCase().trim()
@@ -129,14 +148,15 @@ export const eleveService = {
   async creer(donnees: FormulaireEleve) {
     if (!supabaseEstConfigure()) {
       const maintenant = new Date().toISOString()
+      const elevesExistants = elevesLocaux()
       const eleve: Eleve = {
         ...donnees,
         id: creerIdentifiant('elv'),
-        matricule: `AKW-${new Date().getFullYear()}-${String(elevesLocaux().length + 1).padStart(3, '0')}`,
+        matricule: creerMatriculeLocal(donnees, elevesExistants),
         creeLe: maintenant,
         misAJourLe: maintenant,
       }
-      const eleves = [eleve, ...elevesLocaux()]
+      const eleves = [eleve, ...elevesExistants]
       sauvegarderElevesLocaux(eleves)
       return eleve
     }

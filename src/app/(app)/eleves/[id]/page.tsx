@@ -21,6 +21,8 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 
+import { eleveService } from '@/features/eleves/services/eleveService'
+import { messageErreur } from '@/shared/lib/erreurs'
 import {
   calculerMoyenne,
   couleurAvatar,
@@ -29,8 +31,6 @@ import {
   obtenirInitiales,
   obtenirMention,
 } from '@/shared/lib/utils'
-import { eleveService } from '@/features/eleves/services/eleveService'
-import { messageErreur } from '@/shared/lib/erreurs'
 import type { Absence, Classe, EleveAvecDetails, Paiement } from '@/shared/types'
 
 type Onglet = 'infos' | 'paiements' | 'notes' | 'absences'
